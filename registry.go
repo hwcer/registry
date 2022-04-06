@@ -1,6 +1,6 @@
 package registry
 
-type RangeHandle func(name string, route *Service) bool
+type RangeHandle func(name string, service *Service) bool
 
 type Registry struct {
 	*Options

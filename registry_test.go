@@ -16,20 +16,18 @@ func ABC() {
 }
 
 func TestRoute(t *testing.T) {
-	registry := New("/:x")
+	registry := New(nil)
 
-	route := registry.Namespace("srv")
-	route.Register(&services{})
+	service := registry.Service("srv")
+	service.Register(&services{})
 
-	if err := route.Register(ABC); err != nil {
+	if err := service.Register(ABC); err != nil {
 		t.Logf("ERROR:%v", err)
 	}
 
-	registry.Range(func(name string, method interface{}) error {
-		t.Logf("NAME:%v", name)
-		return nil
+	registry.Range(func(name string, service *Service) bool {
+		t.Logf("servicePath:%v,serviceMethod:%v", name, service.Paths())
+		return true
 	})
-
-	t.Logf("Paths:%v", registry.Paths())
 
 }
