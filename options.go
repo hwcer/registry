@@ -11,22 +11,22 @@ func NewOptions() *Options {
 }
 
 type Options struct {
+	route  map[string]*Service
 	Format func(string) string                     //格式化路径
 	Filter func(reflect.Value, reflect.Value) bool //用于判断struct中的方法是否合法接口
-	route  map[string]*Service
 }
 
 //Clean 将所有path 格式化成 /a/b 模式
 func (this *Options) Clean(paths ...string) (r string) {
+	paths = append([]string{"/"}, paths...)
 	p := path.Join(paths...)
 	if this.Format != nil {
 		r = this.Format(p)
 	} else {
 		r = strings.ToLower(p)
 	}
-	r = strings.Trim(r, "/")
-	if r != "" {
-		r = strings.Join([]string{"/", r}, "")
+	if r == "/" {
+		r = ""
 	}
 	return
 }
