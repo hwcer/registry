@@ -1,7 +1,5 @@
 package registry
 
-type RangeHandle func(service *Service) bool
-
 type Registry struct {
 	*Options
 	dict map[string]*Service
@@ -36,11 +34,9 @@ func (this *Registry) Match(path string) (srv *Service, ok bool) {
 	return
 }
 
-func (this *Registry) Range(fn RangeHandle) {
-	for _, r := range this.dict {
-		if !fn(r) {
-			return
-		}
+func (this *Registry) Services() (r []*Service) {
+	for _, s := range this.dict {
+		r = append(r, s)
 	}
 	return
 }
