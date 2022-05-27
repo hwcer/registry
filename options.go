@@ -11,7 +11,7 @@ func NewOptions() *Options {
 }
 
 type Options struct {
-	route  map[string]*Service
+	route  map[string]*Service                     //ALL PATH
 	Format func(string) string                     //格式化路径
 	Filter func(reflect.Value, reflect.Value) bool //用于判断struct中的方法是否合法接口
 }
@@ -32,7 +32,7 @@ func (this *Options) Clean(paths ...string) (r string) {
 }
 
 func (this *Options) addRoutePath(r *Service, s ...string) {
-	p := []string{r.name}
+	p := []string{r.prefix}
 	p = append(p, s...)
 	k := path.Join(p...)
 	this.route[k] = r

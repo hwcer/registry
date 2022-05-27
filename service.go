@@ -23,19 +23,24 @@ func NewService(name string, opts *Options) *Service {
 		nodes:   make(map[string]*Node),
 		method:  make(map[string]reflect.Value),
 	}
-	r.name = r.Clean(name)
+	r.prefix = r.Clean(name)
+	r.name = r.prefix[1:]
 	return r
 }
 
 type Service struct {
 	*Options
 	name   string
+	prefix string
 	nodes  map[string]*Node
 	method map[string]reflect.Value
 }
 
 func (this *Service) Name() string {
 	return this.name
+}
+func (this *Service) Prefix() string {
+	return this.prefix
 }
 
 //Register
@@ -147,8 +152,8 @@ func (this *Service) RegisterStruct(i interface{}, name ...string) error {
 // path : $prefix/$methodName
 // path : $prefix/$nodeName/$methodName
 func (this *Service) Match(path string) (proto, fn reflect.Value, ok bool) {
-	index := len(this.name)
-	if index > 0 && !strings.HasPrefix(path, this.name) {
+	index := len(this.prefix)
+	if index > 0 && !strings.HasPrefix(path, this.prefix) {
 		return
 	}
 	name := path[index:]

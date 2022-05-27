@@ -1,6 +1,6 @@
 package registry
 
-type RangeHandle func(name string, service *Service) bool
+type RangeHandle func(service *Service) bool
 
 type Registry struct {
 	*Options
@@ -24,8 +24,8 @@ func (this *Registry) Len() int {
 }
 
 func (this *Registry) Get(name string) (srv *Service, ok bool) {
-	name = this.Clean(name)
-	srv, ok = this.dict[name]
+	prefix := this.Clean(name)
+	srv, ok = this.dict[prefix]
 	return
 }
 
@@ -37,8 +37,8 @@ func (this *Registry) Match(path string) (srv *Service, ok bool) {
 }
 
 func (this *Registry) Range(fn RangeHandle) {
-	for k, r := range this.dict {
-		if !fn(k, r) {
+	for _, r := range this.dict {
+		if !fn(r) {
 			return
 		}
 	}
@@ -47,11 +47,11 @@ func (this *Registry) Range(fn RangeHandle) {
 
 //Service GET OR CREATE
 func (this *Registry) Service(name string) *Service {
-	name = this.Clean(name)
-	if r, ok := this.dict[name]; ok {
+	prefix := this.Clean(name)
+	if r, ok := this.dict[prefix]; ok {
 		return r
 	}
-	srv := NewService(name, this.Options)
-	this.dict[srv.name] = srv
+	srv := NewService(prefix, this.Options)
+	this.dict[prefix] = srv
 	return srv
 }
