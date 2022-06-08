@@ -24,7 +24,9 @@ func NewService(name string, opts *Options) *Service {
 		method:  make(map[string]reflect.Value),
 	}
 	r.prefix = r.Clean(name)
-	r.name = r.prefix[1:]
+	if len(r.prefix) > 1 {
+		r.name = r.prefix[1:]
+	}
 	return r
 }
 
