@@ -80,7 +80,7 @@ func (this *Service) RegisterFun(i interface{}, name ...string) error {
 		return errors.New("RegisterFun name empty")
 	}
 	var proto reflect.Value
-	if this.Options.Filter != nil && !this.Options.Filter(proto, v) {
+	if this.Options.Filter != nil && !this.Options.Filter(this, proto, v) {
 		return fmt.Errorf("RegisterFun filter return false:%v", fname)
 	}
 
@@ -140,7 +140,7 @@ func (this *Service) RegisterStruct(i interface{}, name ...string) error {
 		//	logger.Debug("Watch value data num or return num error,value:%v.%v()", sname, fname)
 		//	continue
 		//}
-		if this.Options.Filter != nil && !this.Options.Filter(v, method.Func) {
+		if this.Options.Filter != nil && !this.Options.Filter(this, v, method.Func) {
 			continue
 		}
 		fname = this.Clean(fname)

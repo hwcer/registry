@@ -11,9 +11,9 @@ func NewOptions() *Options {
 }
 
 type Options struct {
-	route  map[string]*Service                     //ALL PATH
-	Format func(string) string                     //格式化路径
-	Filter func(reflect.Value, reflect.Value) bool //用于判断struct中的方法是否合法接口
+	route  map[string]*Service                               //ALL PATH
+	Format func(string) string                               //格式化路径
+	Filter func(*Service, reflect.Value, reflect.Value) bool //用于判断struct中的方法是否合法接口
 }
 
 //Clean 将所有path 格式化成 /a/b 模式
