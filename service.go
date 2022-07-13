@@ -3,7 +3,7 @@ package registry
 import (
 	"errors"
 	"fmt"
-	"github.com/hwcer/cosgo/library/logger"
+	"github.com/hwcer/cosgo/logger"
 	"path"
 	"reflect"
 	"strings"
@@ -46,7 +46,7 @@ func (this *Service) Prefix() string {
 }
 
 //Register
-func (this *Service) Register(i interface{}, name ...string) error {
+func (this *Service) Register(i interface{}, prefix ...string) error {
 	v := reflect.ValueOf(i)
 	var kind reflect.Kind
 	if v.Kind() == reflect.Ptr {
@@ -56,29 +56,34 @@ func (this *Service) Register(i interface{}, name ...string) error {
 	}
 	switch kind {
 	case reflect.Func:
-		return this.RegisterFun(v, name...)
+		return this.RegisterFun(v, prefix...)
 	case reflect.Struct:
-		return this.RegisterStruct(v, name...)
+		return this.RegisterStruct(v, prefix...)
 	default:
 		return fmt.Errorf("未知的注册类型：%v", v.Kind())
 	}
 }
 
-func (this *Service) RegisterFun(i interface{}, name ...string) error {
+func (this *Service) format(name string, prefix ...string) string {
+	if len(prefix) == 0 {
+		return this.Clean(name)
+	}
+	s := this.Clean(prefix...)
+	s = strings.Replace(s, "%v", strings.ToLower(name), -1)
+	return s
+}
+
+func (this *Service) RegisterFun(i interface{}, prefix ...string) error {
 	v := ValueOf(i)
 	if v.Kind() != reflect.Func {
 		return errors.New("RegisterFun fn type must be reflect.Func")
 	}
-	var fname string
-	if len(name) > 0 {
-		fname = name[0]
-	} else {
-		fname = FuncName(v)
-	}
-	fname = this.Clean(fname)
+
+	fname := this.format(FuncName(v), prefix...)
 	if fname == "" {
 		return errors.New("RegisterFun name empty")
 	}
+
 	var proto reflect.Value
 	if this.Options.Filter != nil && !this.Options.Filter(this, proto, v) {
 		return fmt.Errorf("RegisterFun filter return false:%v", fname)
@@ -96,7 +101,7 @@ func (this *Service) RegisterFun(i interface{}, name ...string) error {
 }
 
 //Register 注册一组handle
-func (this *Service) RegisterStruct(i interface{}, name ...string) error {
+func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 	v := ValueOf(i)
 	if v.Kind() != reflect.Ptr {
 		return errors.New("RegisterStruct handle type must be reflect.Struct")
@@ -105,13 +110,7 @@ func (this *Service) RegisterStruct(i interface{}, name ...string) error {
 		return errors.New("RegisterStruct handle type must be reflect.Struct")
 	}
 	handleType := v.Type()
-	var sname string
-	if len(name) > 0 {
-		sname = name[0]
-	} else {
-		sname = handleType.Elem().Name()
-	}
-	sname = this.Clean(sname)
+	sname := this.format(handleType.Elem().Name(), prefix...)
 	if sname == "" {
 		return errors.New("RegisterStruct name empty")
 	}
@@ -135,11 +134,6 @@ func (this *Service) RegisterStruct(i interface{}, name ...string) error {
 			logger.Debug("Watch value Can't Exported,value:%v.%v()", sname, fname)
 			continue
 		}
-		// value needs four ins: receiver, context.Ctx, *data, *reply.
-		//if methodType.NumIn() != 2 || methodType.NumOut() != 1 {
-		//	logger.Debug("Watch value data num or return num error,value:%v.%v()", sname, fname)
-		//	continue
-		//}
 		if this.Options.Filter != nil && !this.Options.Filter(this, v, method.Func) {
 			continue
 		}

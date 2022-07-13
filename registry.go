@@ -26,6 +26,11 @@ func (this *Registry) Get(name string) (srv *Service, ok bool) {
 	srv, ok = this.dict[prefix]
 	return
 }
+func (this *Registry) Has(name string) (ok bool) {
+	prefix := this.Clean(name)
+	_, ok = this.dict[prefix]
+	return
+}
 
 //Match 通过路径匹配Route,path必须是使用 Registry.Clean()处理后的
 func (this *Registry) Match(path string) (srv *Service, ok bool) {
