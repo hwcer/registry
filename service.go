@@ -89,9 +89,6 @@ func (this *Service) RegisterFun(i interface{}, prefix ...string) error {
 		return fmt.Errorf("RegisterFun filter return false:%v", fname)
 	}
 
-	if strings.LastIndex(fname, "/") > 0 {
-		return fmt.Errorf("RegisterFun name error:%v", fname)
-	}
 	if _, ok := this.method[fname]; ok {
 		return fmt.Errorf("RegisterFun exist:%v", fname)
 	}
