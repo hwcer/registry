@@ -45,7 +45,7 @@ func (this *Service) Prefix() string {
 	return this.prefix
 }
 
-//Register
+// Register
 func (this *Service) Register(i interface{}, prefix ...string) error {
 	v := reflect.ValueOf(i)
 	var kind reflect.Kind
@@ -97,7 +97,7 @@ func (this *Service) RegisterFun(i interface{}, prefix ...string) error {
 	return nil
 }
 
-//Register 注册一组handle
+// Register 注册一组handle
 func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 	v := ValueOf(i)
 	if v.Kind() != reflect.Ptr {
@@ -141,7 +141,7 @@ func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 	return nil
 }
 
-//Match 匹配一个路径
+// Match 匹配一个路径
 // path : $prefix/$methodName
 // path : $prefix/$nodeName/$methodName
 func (this *Service) Match(path string) (proto, fn reflect.Value, ok bool) {
