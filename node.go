@@ -2,12 +2,44 @@ package registry
 
 import "reflect"
 
-func NewNode(name string, i reflect.Value) *Node {
-	return &Node{name: name, i: i, method: make(map[string]reflect.Value)}
+type Node struct {
+	name   string
+	value  reflect.Value
+	binder reflect.Value //绑定的对象，作为对象的方法时才有值
 }
 
-type Node struct {
-	i      reflect.Value
-	name   string
-	method map[string]reflect.Value
+func (this *Node) Call(args ...interface{}) (r []reflect.Value) {
+	var arr []reflect.Value
+	if this.binder.IsValid() {
+		arr = append(arr, this.binder)
+	}
+	for _, v := range args {
+		arr = append(arr, reflect.ValueOf(v))
+	}
+	return this.value.Call(arr)
+}
+
+func (this *Node) Value() reflect.Value {
+	return this.value
+}
+
+func (this *Node) Binder() interface{} {
+	if this.binder.IsValid() {
+		return this.binder.Interface()
+	}
+	return nil
+}
+
+func (this *Node) Method() (fun interface{}) {
+	return this.value.Interface()
+}
+
+// IsFunc 判断是func
+func (this *Node) IsFunc() bool {
+	return !this.binder.IsValid()
+}
+
+// IsMethod 对象中的方法
+func (this *Node) IsMethod() bool {
+	return this.binder.IsValid()
 }

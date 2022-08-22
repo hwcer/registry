@@ -32,21 +32,14 @@ func (this *Registry) Has(name string) (ok bool) {
 	return
 }
 
-//Match 通过路径匹配Route,path必须是使用 Registry.Clean()处理后的
+// Match 通过路径匹配Route,path必须是使用 Registry.Clean()处理后的
 func (this *Registry) Match(path string) (srv *Service, ok bool) {
 	//path = this.Clean(path)
 	srv, ok = this.Options.route[path]
 	return
 }
 
-func (this *Registry) Services() (r []*Service) {
-	for _, s := range this.dict {
-		r = append(r, s)
-	}
-	return
-}
-
-//Service GET OR CREATE
+// Service GET OR CREATE
 func (this *Registry) Service(name string) *Service {
 	prefix := this.Clean(name)
 	if r, ok := this.dict[prefix]; ok {
@@ -55,4 +48,18 @@ func (this *Registry) Service(name string) *Service {
 	srv := NewService(prefix, this.Options)
 	this.dict[prefix] = srv
 	return srv
+}
+
+// Register 默认根路径注册
+func (this *Registry) Register(i interface{}) error {
+	s := this.Service("")
+	return s.Register(i)
+}
+
+// Services 获取所有ServicePath
+func (this *Registry) Services() (r []*Service) {
+	for _, s := range this.dict {
+		r = append(r, s)
+	}
+	return
 }
