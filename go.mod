@@ -2,6 +2,4 @@ module github.com/hwcer/registry
 
 go 1.17
 
-replace github.com/hwcer/cosgo v0.0.0 => ../cosgo
-
-require github.com/hwcer/cosgo v0.0.0
+require github.com/hwcer/logger v0.0.0-20220824032233-d521abb0ee68
