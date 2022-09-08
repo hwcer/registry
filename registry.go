@@ -51,9 +51,9 @@ func (this *Registry) Service(name string) *Service {
 }
 
 // Register 默认根路径注册
-func (this *Registry) Register(i interface{}) error {
+func (this *Registry) Register(i interface{}, prefix ...string) error {
 	s := this.Service("")
-	return s.Register(i)
+	return s.Register(i, prefix...)
 }
 
 // Services 获取所有ServicePath
