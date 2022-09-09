@@ -17,7 +17,7 @@ func FuncName(i interface{}) (fname string) {
 			fname = fname[lastIndex+1:]
 		}
 	}
-	return
+	return strings.TrimSuffix(fname, "-fm")
 }
 
 func ValueOf(i interface{}) reflect.Value {
