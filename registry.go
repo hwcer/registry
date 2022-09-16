@@ -8,8 +8,6 @@ type Registry struct {
 func New(opts *Options) *Registry {
 	if opts == nil {
 		opts = NewOptions()
-	} else if opts.route == nil {
-		opts.route = map[string]*Service{}
 	}
 	return &Registry{
 		dict:    make(map[string]*Service),
@@ -31,11 +29,20 @@ func (this *Registry) Has(name string) (ok bool) {
 	_, ok = this.dict[prefix]
 	return
 }
+func (this *Registry) Merge(r *Registry) {
+	for _, s := range r.Services() {
+		prefix := s.prefix
+		if _, ok := this.dict[prefix]; !ok {
+			this.dict[prefix] = &Service{name: s.name, prefix: s.prefix, nodes: make(map[string]*Node), Options: this.Options}
+		}
+		this.dict[prefix].Merge(s)
+	}
+}
 
 // Match 通过路径匹配Route,path必须是使用 Registry.Clean()处理后的
-func (this *Registry) Match(path string) (srv *Service, ok bool) {
-	//path = this.Clean(path)
-	srv, ok = this.Options.route[path]
+func (this *Registry) Match(path string) (node *Node, ok bool) {
+	path = this.Clean(path)
+	node, ok = this.Options.route[path]
 	return
 }
 
@@ -48,12 +55,6 @@ func (this *Registry) Service(name string) *Service {
 	srv := NewService(prefix, this.Options)
 	this.dict[prefix] = srv
 	return srv
-}
-
-// Register 默认根路径注册
-func (this *Registry) Register(i interface{}, prefix ...string) error {
-	s := this.Service("")
-	return s.Register(i, prefix...)
 }
 
 // Services 获取所有ServicePath

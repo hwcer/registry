@@ -10,11 +10,18 @@ import (
 
 /*
 所有接口都必须已经登录
-使用updater时必须使用playerHandle.Data()来获取updater
 */
 
 //NewService name: /x/y
 //文件加载init()中调用
+
+type FilterEventType int8
+
+const (
+	FilterEventTypeFunc FilterEventType = iota
+	FilterEventTypeMethod
+	FilterEventTypeStruct
+)
 
 func NewService(name string, opts *Options) *Service {
 	r := &Service{
@@ -31,10 +38,29 @@ func NewService(name string, opts *Options) *Service {
 
 type Service struct {
 	*Options
-	name   string
-	prefix string
-	nodes  map[string]*Node
-	//method map[string]reflect.Value
+	name    string
+	prefix  string
+	nodes   map[string]*Node
+	events  map[FilterEventType]func(*Node) bool
+	Handler interface{} //自定义 Filter等方法
+}
+
+func (this *Service) On(t FilterEventType, l func(*Node) bool) {
+	if this.events == nil {
+		this.events = make(map[FilterEventType]func(*Node) bool)
+	}
+	this.events[t] = l
+}
+
+func (this *Service) Emit(t FilterEventType, node *Node) bool {
+	if this.events == nil {
+		return true
+	}
+	filter := this.events[t]
+	if filter != nil && !filter(node) {
+		return false
+	}
+	return true
 }
 
 func (this *Service) Name() string {
@@ -42,6 +68,16 @@ func (this *Service) Name() string {
 }
 func (this *Service) Prefix() string {
 	return this.prefix
+}
+func (this *Service) Merge(s *Service) {
+	if s.Handler != nil {
+		this.Handler = s.Handler
+	}
+	for k, v := range s.nodes {
+		node := &Node{name: v.name, value: v.value, binder: v.binder, service: this}
+		this.nodes[k] = node
+		this.Options.addNode(node)
+	}
 }
 
 // Register 服务注册
@@ -63,6 +99,16 @@ func (this *Service) Register(i interface{}, prefix ...string) error {
 	}
 }
 
+//func (this *Service) filter(node *Node) bool {
+//	if this.Handler == nil {
+//		return true
+//	}
+//	if h, ok := this.Handler.(filterHandle); ok {
+//		return h.Filter(node)
+//	}
+//	return true
+//}
+
 func (this *Service) format(name string, prefix ...string) string {
 	if len(prefix) == 0 {
 		return this.Clean(name)
@@ -82,8 +128,8 @@ func (this *Service) RegisterFun(i interface{}, prefix ...string) error {
 	if name == "" {
 		return errors.New("RegisterFun name empty")
 	}
-	node := &Node{name: name, value: v}
-	if this.Options.Filter != nil && !this.Options.Filter(this, node) {
+	node := &Node{name: name, value: v, service: this}
+	if !this.Emit(FilterEventTypeFunc, node) {
 		return fmt.Errorf("RegisterFun filter return false:%v", name)
 	}
 
@@ -92,11 +138,11 @@ func (this *Service) RegisterFun(i interface{}, prefix ...string) error {
 	}
 	this.nodes[name] = node
 	//this.method[fname] = v
-	this.Options.addRoutePath(this, name)
+	this.Options.addNode(node)
 	return nil
 }
 
-// Register 注册一组handle
+// RegisterStruct 注册一组handle
 func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 	v := ValueOf(i)
 	if v.Kind() != reflect.Ptr {
@@ -107,21 +153,16 @@ func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 	}
 	handleType := v.Type()
 	serviceName := handleType.Elem().Name()
-	//sname := this.format(handleType.Elem().Name(), prefix...)
-	//if sname == "" {
-	//	return errors.New("RegisterStruct name empty")
-	//}
-	//if _, ok := this.nodes[sname]; ok {
-	//	return fmt.Errorf("RegisterStruct name exist:%v", sname)
-	//}
-	//node := NewNode(sname, v)
-	//this.nodes[sname] = node
-	//logger.Debug("Watch:%v\n", sname)
+
+	nb := &Node{name: serviceName, binder: v, service: this}
+	if !this.Emit(FilterEventTypeStruct, nb) {
+		logger.Debug("RegisterStruct filter refuse :%v,PkgPath:%v", serviceName, handleType.PkgPath)
+		return nil
+	}
+
 	for m := 0; m < handleType.NumMethod(); m++ {
 		method := handleType.Method(m)
-		//methodType := method.Type
 		methodName := method.Name
-		//logger.Debug("Watch,sname:%v,type:%v", fname, methodType)
 		// value must be exported.
 		if method.PkgPath != "" {
 			logger.Debug("Watch value PkgPath Not End,value:%v.%v(),PkgPath:%v", serviceName, methodName, method.PkgPath)
@@ -131,13 +172,13 @@ func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 			logger.Debug("Watch value Can't Exported,value:%v.%v()", serviceName, methodName)
 			continue
 		}
-		name := this.format(serviceName+"/"+methodName, prefix...)
-		node := &Node{name: name, binder: v, value: method.Func}
-		if this.Options.Filter != nil && !this.Options.Filter(this, node) {
+		name := this.format(strings.Join([]string{serviceName, methodName}, "/"), prefix...)
+		node := &Node{name: name, binder: v, value: method.Func, service: this}
+		if !this.Emit(FilterEventTypeMethod, node) {
 			continue
 		}
 		this.nodes[name] = node
-		this.Options.addRoutePath(this, name)
+		this.Options.addNode(node)
 	}
 	return nil
 }
@@ -145,15 +186,15 @@ func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 // Match 匹配一个路径
 // path : $prefix/$methodName
 // path : $prefix/$nodeName/$methodName
-func (this *Service) Match(path string) (node *Node, ok bool) {
-	index := len(this.prefix)
-	if index > 0 && !strings.HasPrefix(path, this.prefix) {
-		return
-	}
-	name := path[index:]
-	node, ok = this.nodes[name]
-	return
-}
+//func (this *Service) Match(path string) (node *Node, ok bool) {
+//	index := len(this.prefix)
+//	if index > 0 && !strings.HasPrefix(path, this.prefix) {
+//		return
+//	}
+//	name := path[index:]
+//	node, ok = this.nodes[name]
+//	return
+//}
 
 func (this *Service) Paths() (r []string) {
 	for k, _ := range this.nodes {

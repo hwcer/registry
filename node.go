@@ -3,9 +3,10 @@ package registry
 import "reflect"
 
 type Node struct {
-	name   string
-	value  reflect.Value
-	binder reflect.Value //绑定的对象，作为对象的方法时才有值
+	name    string
+	value   reflect.Value
+	binder  reflect.Value //绑定的对象，作为对象的方法时才有值
+	service *Service
 }
 
 func (this *Node) Call(args ...interface{}) (r []reflect.Value) {
@@ -34,12 +35,21 @@ func (this *Node) Method() (fun interface{}) {
 	return this.value.Interface()
 }
 
+func (this *Node) Service() *Service {
+	return this.service
+}
+
 // IsFunc 判断是func
 func (this *Node) IsFunc() bool {
-	return !this.binder.IsValid()
+	return this.value.IsValid() && !this.binder.IsValid()
 }
 
 // IsMethod 对象中的方法
 func (this *Node) IsMethod() bool {
-	return this.binder.IsValid()
+	return this.value.IsValid() && this.binder.IsValid()
+}
+
+// IsStruct 仅仅是一个还未解析的对象
+func (this *Node) IsStruct() bool {
+	return !this.value.IsValid() && this.binder.IsValid()
 }
