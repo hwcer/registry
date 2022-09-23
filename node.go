@@ -24,6 +24,10 @@ func (this *Node) Name() string {
 	return this.name
 }
 
+func (this *Node) Route() string {
+	return Clean(this.service.prefix, this.name)
+}
+
 func (this *Node) Value() reflect.Value {
 	return this.value
 }
@@ -41,6 +45,10 @@ func (this *Node) Method() (fun interface{}) {
 
 func (this *Node) Service() *Service {
 	return this.service
+}
+
+func (this *Node) Handler() interface{} {
+	return this.service.Handler
 }
 
 // IsFunc 判断是func

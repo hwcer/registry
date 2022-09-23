@@ -1,17 +1,17 @@
 package registry
 
 type Registry struct {
-	*Options
-	dict map[string]*Service
+	dict   map[string]*Service
+	router *Router
 }
 
-func New(opts *Options) *Registry {
-	if opts == nil {
-		opts = NewOptions()
+func New(router *Router) *Registry {
+	if router == nil {
+		router = NewRouter()
 	}
 	return &Registry{
-		dict:    make(map[string]*Service),
-		Options: opts,
+		dict:   make(map[string]*Service),
+		router: router,
 	}
 }
 
@@ -20,39 +20,52 @@ func (this *Registry) Len() int {
 }
 
 func (this *Registry) Get(name string) (srv *Service, ok bool) {
-	prefix := this.Clean(name)
+	prefix := Clean(name)
 	srv, ok = this.dict[prefix]
 	return
 }
 func (this *Registry) Has(name string) (ok bool) {
-	prefix := this.Clean(name)
+	prefix := Clean(name)
 	_, ok = this.dict[prefix]
 	return
 }
+
+func (this *Registry) Clean(paths ...string) string {
+	return Clean(paths...)
+}
+
 func (this *Registry) Merge(r *Registry) {
 	for _, s := range r.Services() {
 		prefix := s.prefix
 		if _, ok := this.dict[prefix]; !ok {
-			this.dict[prefix] = &Service{name: s.name, prefix: s.prefix, nodes: make(map[string]*Node), Options: this.Options}
+			this.dict[prefix] = NewService(prefix, this.router)
 		}
 		this.dict[prefix].Merge(s)
 	}
 }
 
+func (this *Registry) Router() *Router {
+	return this.router
+}
+
 // Match 通过路径匹配Route,path必须是使用 Registry.Clean()处理后的
-func (this *Registry) Match(path string) (node *Node, ok bool) {
-	path = this.Clean(path)
-	node, ok = this.Options.route[path]
+func (this *Registry) Match(paths ...string) (node *Node, ok bool) {
+	nodes := this.router.Match(paths...)
+	for i := len(nodes) - 1; i >= 0; i-- {
+		if node, ok = nodes[i].Handle().(*Node); ok {
+			return
+		}
+	}
 	return
 }
 
 // Service GET OR CREATE
 func (this *Registry) Service(name string) *Service {
-	prefix := this.Clean(name)
+	prefix := Clean(name)
 	if r, ok := this.dict[prefix]; ok {
 		return r
 	}
-	srv := NewService(prefix, this.Options)
+	srv := NewService(prefix, this.router)
 	this.dict[prefix] = srv
 	return srv
 }

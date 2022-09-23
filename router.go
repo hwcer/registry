@@ -3,7 +3,6 @@ package registry
 import (
 	"errors"
 	"fmt"
-	"path"
 	"strings"
 )
 
@@ -13,26 +12,6 @@ const (
 )
 
 var RouterPrefix = []string{"/"}
-
-func PathName(paths ...string) (r string) {
-	paths = append(RouterPrefix, paths...)
-	p := path.Join(paths...)
-	if r == "/" {
-		r = ""
-	} else {
-		r = strings.ToLower(p)
-	}
-	return
-}
-
-func NodeName(name string) string {
-	if strings.HasPrefix(name, PathMatchParam) {
-		return PathMatchParam
-	} else if strings.HasPrefix(name, PathMatchVague) {
-		return PathMatchVague
-	}
-	return name
-}
 
 func NewRouter() *Router {
 	return newRouter("", []string{""}, 0)
@@ -52,7 +31,7 @@ func newRouter(name string, arr []string, step int) *Router {
 // 静态路由
 func newStatic(arr []string, handle interface{}) *Router {
 	l := len(arr) - 1
-	node := newRouter(NodeName(arr[l]), arr, l)
+	node := newRouter(RouteName(arr[l]), arr, l)
 	node.handle = handle
 	return node
 }
@@ -79,7 +58,7 @@ type Router struct {
 /s/123
 */
 func (this *Router) Match(paths ...string) (nodes []*Router) {
-	route := PathName(paths...)
+	route := Clean(paths...)
 	//静态路由
 	if v, ok := this.static[route]; ok {
 		nodes = append(nodes, v)
@@ -103,38 +82,30 @@ func (this *Router) Match(paths ...string) (nodes []*Router) {
 	//}
 	n := len(spareNode)
 	for selectNode != nil || n > 0 {
-		fmt.Printf("==========%v====%v====\n", n, len(spareNode))
 		if selectNode == nil {
 			n -= 1
 			selectNode = spareNode[n]
 			spareNode = spareNode[0:n]
 		}
-
-		fmt.Printf("selectNode step:%v  PATH:%v  \n", selectNode.step, strings.Join(selectNode.Route(), "/"))
 		if selectNode.name == PathMatchVague || selectNode.step == lastPathIndex {
 			if selectNode.handle != nil {
 				nodes = append(nodes, selectNode)
 			}
 			selectNode = nil
-			fmt.Printf("匹配成功\n")
 		} else {
-			fmt.Printf("查询子节点:%v \n", selectNode.childes())
 			//查询子节点
 			i := selectNode.step + 1
 			k := arr[i]
 			if node := selectNode.child[PathMatchVague]; node != nil {
 				n += 1
 				spareNode = append(spareNode, node)
-				fmt.Printf("添加候选节点 step:%v  PATH:%v  \n", node.step, strings.Join(node.Route(), "/"))
 			}
 			if node := selectNode.child[PathMatchParam]; node != nil {
 				n += 1
 				spareNode = append(spareNode, node)
-				fmt.Printf("添加候选节点 step:%v  PATH:%v  \n", node.step, strings.Join(node.Route(), "/"))
 			}
 			if node := selectNode.child[k]; node != nil {
 				selectNode = node
-				fmt.Printf("添加候选节点 step:%v  PATH:%v  \n", node.step, strings.Join(node.Route(), "/"))
 			} else {
 				selectNode = nil
 			}
@@ -147,7 +118,7 @@ func (this *Router) Register(route string, handle interface{}) (err error) {
 	if route == "" {
 		return errors.New("Router.Watch method or route empty")
 	}
-	route = PathName(route)
+	route = Clean(route)
 	arr := strings.Split(route, "/")
 	//静态路径
 	if !strings.Contains(route, PathMatchParam) && !strings.Contains(route, PathMatchVague) {
@@ -163,10 +134,7 @@ func (this *Router) Register(route string, handle interface{}) (err error) {
 	for i := 1; i < len(arr); i++ {
 		node, err = node.addChild(arr, i)
 		if err != nil {
-			fmt.Printf("路由冲突: step:%v  PATH:%v  \n", node.step, strings.Join(node.Route(), "/"))
 			return
-		} else {
-			//fmt.Printf("添加节点 step:%v  PATH:%v  \n", node.step, strings.Join(node.Route(), "/"))
 		}
 	}
 	if node != nil {
@@ -186,8 +154,7 @@ func (this *Router) Handle() interface{} {
 
 func (this *Router) Params(paths ...string) map[string]string {
 	r := make(map[string]string)
-	arr := strings.Split(PathName(paths...), "/")
-
+	arr := strings.Split(Clean(paths...), "/")
 	m := len(arr)
 	if m > len(this.route) {
 		m = len(this.route)
@@ -204,13 +171,12 @@ func (this *Router) Params(paths ...string) map[string]string {
 			}
 			r[k] = strings.Join(arr[i:], "/")
 		}
-
 	}
 	return r
 }
 
 func (this *Router) addChild(arr []string, step int) (node *Router, err error) {
-	name := NodeName(arr[step])
+	name := RouteName(arr[step])
 	index := len(arr) - 1
 	//(*)必须放在结尾
 	if name == PathMatchVague && index != step {
@@ -225,9 +191,6 @@ func (this *Router) addChild(arr []string, step int) (node *Router, err error) {
 	if node == nil {
 		node = newRouter(name, arr, step)
 		this.child[name] = node
-		fmt.Printf("创建节点 step:%v  PATH:%v  \n", node.step, strings.Join(node.Route(), "/"))
-	} else {
-		fmt.Printf("存在节点 step:%v  PATH:%v  \n", node.step, strings.Join(node.Route(), "/"))
 	}
 	return
 }

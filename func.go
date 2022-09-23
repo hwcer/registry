@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"path"
 	"reflect"
 	"runtime"
 	"strings"
@@ -8,6 +9,16 @@ import (
 	"unicode/utf8"
 )
 
+func Clean(paths ...string) (r string) {
+	paths = append(RouterPrefix, paths...)
+	p := path.Join(paths...)
+	if r == "/" {
+		r = ""
+	} else {
+		r = strings.ToLower(p)
+	}
+	return
+}
 func FuncName(i interface{}) (fname string) {
 	fn := ValueOf(i)
 	fname = runtime.FuncForPC(reflect.Indirect(fn).Pointer()).Name()
@@ -18,6 +29,15 @@ func FuncName(i interface{}) (fname string) {
 		}
 	}
 	return strings.TrimSuffix(fname, "-fm")
+}
+
+func RouteName(name string) string {
+	if strings.HasPrefix(name, PathMatchParam) {
+		return PathMatchParam
+	} else if strings.HasPrefix(name, PathMatchVague) {
+		return PathMatchVague
+	}
+	return name
 }
 
 func ValueOf(i interface{}) reflect.Value {

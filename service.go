@@ -23,13 +23,12 @@ const (
 	FilterEventTypeStruct
 )
 
-func NewService(name string, opts *Options) *Service {
+func NewService(name string, router *Router) *Service {
 	r := &Service{
-		Options: opts,
-		nodes:   make(map[string]*Node),
-		//method:  make(map[string]reflect.Value),
+		nodes:  make(map[string]*Node),
+		router: router,
 	}
-	r.prefix = r.Clean(name)
+	r.prefix = Clean(name)
 	if len(r.prefix) > 1 {
 		r.name = r.prefix[1:]
 	}
@@ -37,11 +36,11 @@ func NewService(name string, opts *Options) *Service {
 }
 
 type Service struct {
-	*Options
 	name    string // a/b
 	prefix  string //  /a/b
 	nodes   map[string]*Node
 	events  map[FilterEventType]func(*Node) bool
+	router  *Router
 	Handler interface{} //自定义 Filter等方法
 }
 
@@ -66,6 +65,10 @@ func (this *Service) Emit(t FilterEventType, node *Node) bool {
 func (this *Service) Name() string {
 	return this.name
 }
+func (this *Service) Clean(paths ...string) string {
+	return Clean(paths...)
+}
+
 func (this *Service) Prefix() string {
 	return this.prefix
 }
@@ -76,7 +79,7 @@ func (this *Service) Merge(s *Service) {
 	for k, v := range s.nodes {
 		node := &Node{name: v.name, value: v.value, binder: v.binder, service: this}
 		this.nodes[k] = node
-		this.Options.addNode(node)
+		//this.router.Register()
 	}
 }
 
@@ -111,9 +114,9 @@ func (this *Service) Register(i interface{}, prefix ...string) error {
 
 func (this *Service) format(name string, prefix ...string) string {
 	if len(prefix) == 0 {
-		return this.Clean(name)
+		return Clean(name)
 	}
-	s := this.Clean(prefix...)
+	s := Clean(prefix...)
 	s = strings.Replace(s, "%v", strings.ToLower(name), -1)
 	return s
 }
@@ -137,9 +140,7 @@ func (this *Service) RegisterFun(i interface{}, prefix ...string) error {
 		return fmt.Errorf("RegisterFun exist:%v", name)
 	}
 	this.nodes[name] = node
-	//this.method[fname] = v
-	this.Options.addNode(node)
-	return nil
+	return this.router.Register(node.Route(), node)
 }
 
 // RegisterStruct 注册一组handle
@@ -178,23 +179,12 @@ func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 			continue
 		}
 		this.nodes[name] = node
-		this.Options.addNode(node)
+		if err := this.router.Register(node.Route(), node); err != nil {
+			return err
+		}
 	}
 	return nil
 }
-
-// Match 匹配一个路径
-// path : $prefix/$methodName
-// path : $prefix/$nodeName/$methodName
-//func (this *Service) Match(path string) (node *Node, ok bool) {
-//	index := len(this.prefix)
-//	if index > 0 && !strings.HasPrefix(path, this.prefix) {
-//		return
-//	}
-//	name := path[index:]
-//	node, ok = this.nodes[name]
-//	return
-//}
 
 func (this *Service) Paths() (r []string) {
 	for k, _ := range this.nodes {
