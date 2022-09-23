@@ -159,14 +159,9 @@ func (this *Router) Register(route string, handle interface{}) (err error) {
 		return
 	}
 	//匹配路由
-	var node *Router
+	node := this
 	for i := 1; i < len(arr); i++ {
-		if node == nil {
-			node = newRouter(NodeName(arr[i]), arr, i)
-			this.child[node.name] = node
-		} else {
-			node, err = node.addChild(arr, i)
-		}
+		node, err = node.addChild(arr, i)
 		if err != nil {
 			fmt.Printf("路由冲突: step:%v  PATH:%v  \n", node.step, strings.Join(node.Route(), "/"))
 			return
