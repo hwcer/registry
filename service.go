@@ -38,8 +38,8 @@ func NewService(name string, opts *Options) *Service {
 
 type Service struct {
 	*Options
-	name    string
-	prefix  string
+	name    string // a/b
+	prefix  string //  /a/b
 	nodes   map[string]*Node
 	events  map[FilterEventType]func(*Node) bool
 	Handler interface{} //自定义 Filter等方法
@@ -201,4 +201,12 @@ func (this *Service) Paths() (r []string) {
 		r = append(r, k)
 	}
 	return
+}
+
+func (this *Service) Range(cb func(*Node) bool) {
+	for _, node := range this.nodes {
+		if !cb(node) {
+			return
+		}
+	}
 }

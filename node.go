@@ -20,6 +20,10 @@ func (this *Node) Call(args ...interface{}) (r []reflect.Value) {
 	return this.value.Call(arr)
 }
 
+func (this *Node) Name() string {
+	return this.name
+}
+
 func (this *Node) Value() reflect.Value {
 	return this.value
 }
