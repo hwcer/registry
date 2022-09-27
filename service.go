@@ -120,7 +120,13 @@ func (this *Service) format(serviceName, methodName string, prefix ...string) st
 
 	s := Format(serviceName)
 	m := Format(methodName)
-	name := strings.Join([]string{s, m}, "/")
+	var name string
+	if s == "" {
+		name = m
+	} else {
+		name = strings.Join([]string{s, m}, "/")
+	}
+
 	p = strings.Replace(p, "%v", name, -1)
 	p = strings.Replace(p, "%s", s, -1)
 	p = strings.Replace(p, "%m", m, -1)
