@@ -15,10 +15,15 @@ func Clean(paths ...string) (r string) {
 	if r == "/" {
 		r = ""
 	} else {
-		r = strings.ToLower(p)
+		r = Format(p)
 	}
 	return
 }
+
+func Format(s string) string {
+	return strings.ToLower(s)
+}
+
 func FuncName(i interface{}) (fname string) {
 	fn := ValueOf(i)
 	fname = runtime.FuncForPC(reflect.Indirect(fn).Pointer()).Name()

@@ -112,13 +112,19 @@ func (this *Service) Register(i interface{}, prefix ...string) error {
 //	return true
 //}
 
-func (this *Service) format(name string, prefix ...string) string {
+func (this *Service) format(serviceName, methodName string, prefix ...string) string {
 	if len(prefix) == 0 {
-		return Clean(name)
+		return Clean(serviceName, methodName)
 	}
-	s := Clean(prefix...)
-	s = strings.Replace(s, "%v", strings.ToLower(name), -1)
-	return s
+	p := Clean(prefix...)
+
+	s := Format(serviceName)
+	m := Format(methodName)
+	name := strings.Join([]string{s, m}, "/")
+	p = strings.Replace(p, "%v", name, -1)
+	p = strings.Replace(p, "%s", s, -1)
+	p = strings.Replace(p, "%m", m, -1)
+	return p
 }
 
 func (this *Service) RegisterFun(i interface{}, prefix ...string) error {
@@ -127,7 +133,7 @@ func (this *Service) RegisterFun(i interface{}, prefix ...string) error {
 		return errors.New("RegisterFun fn type must be reflect.Func")
 	}
 
-	name := this.format(FuncName(v), prefix...)
+	name := this.format("", FuncName(v), prefix...)
 	if name == "" {
 		return errors.New("RegisterFun name empty")
 	}
@@ -173,7 +179,8 @@ func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 			logger.Debug("Watch value Can't Exported,value:%v.%v()", serviceName, methodName)
 			continue
 		}
-		name := this.format(strings.Join([]string{serviceName, methodName}, "/"), prefix...)
+		name := this.format(serviceName, methodName, prefix...)
+
 		node := &Node{name: name, binder: v, value: method.Func, service: this}
 		if !this.Emit(FilterEventTypeMethod, node) {
 			continue
