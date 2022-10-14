@@ -19,15 +19,18 @@ func TestRoute(t *testing.T) {
 	registry := New(nil)
 
 	service := registry.Service("srv")
-	service.Register(&services{})
+	_ = service.Register(&services{})
 
 	if err := service.Register(ABC); err != nil {
 		t.Logf("ERROR:%v", err)
 	}
 
-	registry.Range(func(name string, service *Service) bool {
-		t.Logf("servicePath:%v,serviceMethod:%v", name, service.Paths())
-		return true
-	})
+	for _, s := range registry.Services() {
+		s.Range(func(node *Node) bool {
+			t.Logf("route:%v", node.Route())
+			return true
+		})
+
+	}
 
 }

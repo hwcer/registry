@@ -10,11 +10,12 @@ import (
 )
 
 func Join(paths ...string) (r string) {
-	r = path.Join(paths...)
+	arr := make([]string, len(paths)+1)
+	arr[0] = "/"
+	copy(arr[1:], paths)
+	r = path.Join(arr...)
 	if r == "/" {
 		r = ""
-	} else if !strings.HasPrefix(r, "/") {
-		r = "/" + r
 	}
 	return
 }
