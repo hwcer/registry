@@ -3,6 +3,7 @@ package registry
 import (
 	"errors"
 	"fmt"
+	"path"
 	"strings"
 )
 
@@ -11,7 +12,7 @@ const (
 	PathMatchVague string = "*"
 )
 
-var RouterPrefix = []string{"/"}
+//var RouterPrefix = []string{"/"}
 
 func NewRouter() *Router {
 	return newRouter("", []string{""}, 0)
@@ -41,8 +42,8 @@ type Router struct {
 	name   string             // string,:,*,当前层匹配规则
 	child  map[string]*Router //子路径
 	route  []string           //当前路由绝对路径
-	handle interface{}        //handle入口
 	static map[string]*Router //静态路由,不含糊任何匹配参数
+	handle interface{}        //handle入口
 	//middleware []MiddlewareFunc //中间件
 }
 
@@ -58,7 +59,7 @@ type Router struct {
 /s/123
 */
 func (this *Router) Match(paths ...string) (nodes []*Router) {
-	route := Clean(paths...)
+	route := path.Join(paths...)
 	//静态路由
 	if v, ok := this.static[route]; ok {
 		nodes = append(nodes, v)
@@ -114,11 +115,12 @@ func (this *Router) Match(paths ...string) (nodes []*Router) {
 	return
 }
 
-func (this *Router) Register(route string, handle interface{}) (err error) {
+// Register 注册协议
+func (this *Router) Register(handle interface{}, paths ...string) (err error) {
+	route := path.Join(paths...)
 	if route == "" {
 		return errors.New("Router.Watch method or route empty")
 	}
-	route = Clean(route)
 	arr := strings.Split(route, "/")
 	//静态路径
 	if !strings.Contains(route, PathMatchParam) && !strings.Contains(route, PathMatchVague) {
@@ -154,7 +156,7 @@ func (this *Router) Handle() interface{} {
 
 func (this *Router) Params(paths ...string) map[string]string {
 	r := make(map[string]string)
-	arr := strings.Split(Clean(paths...), "/")
+	arr := strings.Split(path.Join(paths...), "/")
 	m := len(arr)
 	if m > len(this.route) {
 		m = len(this.route)

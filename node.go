@@ -25,7 +25,7 @@ func (this *Node) Name() string {
 }
 
 func (this *Node) Route() string {
-	return Clean(this.service.prefix, this.name)
+	return Join(this.service.prefix, this.name)
 }
 
 func (this *Node) Value() reflect.Value {

@@ -9,20 +9,19 @@ import (
 	"unicode/utf8"
 )
 
-func Clean(paths ...string) (r string) {
-	paths = append(RouterPrefix, paths...)
-	p := path.Join(paths...)
+func Join(paths ...string) (r string) {
+	r = path.Join(paths...)
 	if r == "/" {
 		r = ""
-	} else {
-		r = Format(p)
+	} else if !strings.HasPrefix(r, "/") {
+		r = "/" + r
 	}
 	return
 }
 
-func Format(s string) string {
-	return strings.ToLower(s)
-}
+//func Format(s string) string {
+//	return strings.ToLower(s)
+//}
 
 func FuncName(i interface{}) (fname string) {
 	fn := ValueOf(i)

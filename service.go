@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hwcer/logger"
+	"path"
 	"reflect"
 	"strings"
 )
@@ -25,10 +26,11 @@ const (
 
 func NewService(name string, router *Router) *Service {
 	r := &Service{
-		nodes:  make(map[string]*Node),
-		router: router,
+		nodes:   make(map[string]*Node),
+		router:  router,
+		ToLower: true,
 	}
-	r.prefix = Clean(name)
+	r.prefix = Join(name)
 	if len(r.prefix) > 1 {
 		r.name = r.prefix[1:]
 	}
@@ -42,6 +44,7 @@ type Service struct {
 	events  map[FilterEventType]func(*Node) bool
 	router  *Router
 	Handler interface{} //自定义 Filter等方法
+	ToLower bool        //强制对象和方法名小写
 }
 
 func (this *Service) On(t FilterEventType, l func(*Node) bool) {
@@ -65,22 +68,22 @@ func (this *Service) Emit(t FilterEventType, node *Node) bool {
 func (this *Service) Name() string {
 	return this.name
 }
-func (this *Service) Clean(paths ...string) string {
-	return Clean(paths...)
-}
 
 func (this *Service) Prefix() string {
 	return this.prefix
 }
-func (this *Service) Merge(s *Service) {
+func (this *Service) Merge(s *Service) (err error) {
 	if s.Handler != nil {
 		this.Handler = s.Handler
 	}
 	for k, v := range s.nodes {
 		node := &Node{name: v.name, value: v.value, binder: v.binder, service: this}
 		this.nodes[k] = node
-		//this.router.Register()
+		if err = this.router.Register(node, node.Route()); err != nil {
+			return
+		}
 	}
+	return
 }
 
 // Register 服务注册
@@ -113,23 +116,25 @@ func (this *Service) Register(i interface{}, prefix ...string) error {
 //}
 
 func (this *Service) format(serviceName, methodName string, prefix ...string) string {
+	if this.ToLower {
+		serviceName = strings.ToLower(serviceName)
+		methodName = strings.ToLower(methodName)
+	}
+
 	if len(prefix) == 0 {
-		return Clean(serviceName, methodName)
+		return Join(serviceName, methodName)
 	}
-	p := Clean(prefix...)
 
-	s := Format(serviceName)
-	m := Format(methodName)
+	p := Join(prefix...)
 	var name string
-	if s == "" {
-		name = m
+	if serviceName == "" {
+		name = methodName
 	} else {
-		name = strings.Join([]string{s, m}, "/")
+		name = path.Join(serviceName, methodName)
 	}
-
 	p = strings.Replace(p, "%v", name, -1)
-	p = strings.Replace(p, "%s", s, -1)
-	p = strings.Replace(p, "%m", m, -1)
+	p = strings.Replace(p, "%s", serviceName, -1)
+	p = strings.Replace(p, "%m", methodName, -1)
 	return p
 }
 
@@ -152,7 +157,7 @@ func (this *Service) RegisterFun(i interface{}, prefix ...string) error {
 		return fmt.Errorf("RegisterFun exist:%v", name)
 	}
 	this.nodes[name] = node
-	return this.router.Register(node.Route(), node)
+	return this.router.Register(node, node.Route())
 }
 
 // RegisterStruct 注册一组handle
@@ -192,7 +197,7 @@ func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 			continue
 		}
 		this.nodes[name] = node
-		if err := this.router.Register(node.Route(), node); err != nil {
+		if err := this.router.Register(node, node.Route()); err != nil {
 			return err
 		}
 	}

@@ -20,28 +20,27 @@ func (this *Registry) Len() int {
 }
 
 func (this *Registry) Get(name string) (srv *Service, ok bool) {
-	prefix := Clean(name)
+	prefix := Join(name)
 	srv, ok = this.dict[prefix]
 	return
 }
 func (this *Registry) Has(name string) (ok bool) {
-	prefix := Clean(name)
+	prefix := Join(name)
 	_, ok = this.dict[prefix]
 	return
 }
 
-func (this *Registry) Clean(paths ...string) string {
-	return Clean(paths...)
-}
-
-func (this *Registry) Merge(r *Registry) {
+func (this *Registry) Merge(r *Registry) (err error) {
 	for _, s := range r.Services() {
 		prefix := s.prefix
 		if _, ok := this.dict[prefix]; !ok {
 			this.dict[prefix] = NewService(prefix, this.router)
 		}
-		this.dict[prefix].Merge(s)
+		if err = this.dict[prefix].Merge(s); err != nil {
+			return
+		}
 	}
+	return
 }
 
 func (this *Registry) Router() *Router {
@@ -61,7 +60,7 @@ func (this *Registry) Match(paths ...string) (node *Node, ok bool) {
 
 // Service GET OR CREATE
 func (this *Registry) Service(name string) *Service {
-	prefix := Clean(name)
+	prefix := Join(name)
 	if r, ok := this.dict[prefix]; ok {
 		return r
 	}
