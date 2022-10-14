@@ -26,25 +26,25 @@ const (
 
 func NewService(name string, router *Router) *Service {
 	r := &Service{
-		nodes:   make(map[string]*Node),
-		router:  router,
-		ToLower: true,
+		nodes:  make(map[string]*Node),
+		router: router,
 	}
 	r.prefix = Join(name)
 	if len(r.prefix) > 1 {
 		r.name = r.prefix[1:]
 	}
+	r.Formatter = strings.ToLower
 	return r
 }
 
 type Service struct {
-	name    string // a/b
-	prefix  string //  /a/b
-	nodes   map[string]*Node
-	events  map[FilterEventType]func(*Node) bool
-	router  *Router
-	Handler interface{} //自定义 Filter等方法
-	ToLower bool        //强制对象和方法名小写
+	name      string // a/b
+	prefix    string //  /a/b
+	nodes     map[string]*Node
+	events    map[FilterEventType]func(*Node) bool
+	router    *Router
+	Handler   interface{}         //自定义 Filter等方法
+	Formatter func(string) string //格式化对象和方法名，默认强制小写
 }
 
 func (this *Service) On(t FilterEventType, l func(*Node) bool) {
@@ -116,11 +116,8 @@ func (this *Service) Register(i interface{}, prefix ...string) error {
 //}
 
 func (this *Service) format(serviceName, methodName string, prefix ...string) string {
-	if this.ToLower {
-		serviceName = strings.ToLower(serviceName)
-		methodName = strings.ToLower(methodName)
-	}
-
+	serviceName = this.Formatter(serviceName)
+	methodName = this.Formatter(methodName)
 	if len(prefix) == 0 {
 		return Join(serviceName, methodName)
 	}

@@ -3,7 +3,6 @@ package registry
 import (
 	"errors"
 	"fmt"
-	"path"
 	"strings"
 )
 
@@ -59,7 +58,7 @@ type Router struct {
 /s/123
 */
 func (this *Router) Match(paths ...string) (nodes []*Router) {
-	route := path.Join(paths...)
+	route := Join(paths...)
 	//静态路由
 	if v, ok := this.static[route]; ok {
 		nodes = append(nodes, v)
@@ -117,7 +116,7 @@ func (this *Router) Match(paths ...string) (nodes []*Router) {
 
 // Register 注册协议
 func (this *Router) Register(handle interface{}, paths ...string) (err error) {
-	route := path.Join(paths...)
+	route := Join(paths...)
 	if route == "" {
 		return errors.New("Router.Watch method or route empty")
 	}
@@ -156,7 +155,7 @@ func (this *Router) Handle() interface{} {
 
 func (this *Router) Params(paths ...string) map[string]string {
 	r := make(map[string]string)
-	arr := strings.Split(path.Join(paths...), "/")
+	arr := strings.Split(Join(paths...), "/")
 	m := len(arr)
 	if m > len(this.route) {
 		m = len(this.route)
