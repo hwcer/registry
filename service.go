@@ -16,13 +16,17 @@ import (
 //NewService name: /x/y
 //文件加载init()中调用
 
-type FilterEventType int8
+//type FilterEventType int8
+//
+//const (
+//	FilterEventTypeFunc FilterEventType = iota
+//	FilterEventTypeMethod
+//	FilterEventTypeStruct
+//)
 
-const (
-	FilterEventTypeFunc FilterEventType = iota
-	FilterEventTypeMethod
-	FilterEventTypeStruct
-)
+type filterHandle interface {
+	Filter(*Node) bool
+}
 
 func NewService(name string, router *Router) *Service {
 	r := &Service{
@@ -38,32 +42,32 @@ func NewService(name string, router *Router) *Service {
 }
 
 type Service struct {
-	name      string // a/b
-	prefix    string //  /a/b
-	nodes     map[string]*Node
-	events    map[FilterEventType]func(*Node) bool
+	name   string // a/b
+	prefix string //  /a/b
+	nodes  map[string]*Node
+	//events    map[FilterEventType]func(*Node) bool
 	router    *Router
 	Handler   interface{}         //自定义 Filter等方法
 	Formatter func(string) string //格式化对象和方法名，默认强制小写
 }
 
-func (this *Service) On(t FilterEventType, l func(*Node) bool) {
-	if this.events == nil {
-		this.events = make(map[FilterEventType]func(*Node) bool)
-	}
-	this.events[t] = l
-}
-
-func (this *Service) Emit(t FilterEventType, node *Node) bool {
-	if this.events == nil {
-		return true
-	}
-	filter := this.events[t]
-	if filter != nil && !filter(node) {
-		return false
-	}
-	return true
-}
+//func (this *Service) On(t FilterEventType, l func(*Node) bool) {
+//	if this.events == nil {
+//		this.events = make(map[FilterEventType]func(*Node) bool)
+//	}
+//	this.events[t] = l
+//}
+//
+//func (this *Service) Emit(t FilterEventType, node *Node) bool {
+//	if this.events == nil {
+//		return true
+//	}
+//	filter := this.events[t]
+//	if filter != nil && !filter(node) {
+//		return false
+//	}
+//	return true
+//}
 
 func (this *Service) Name() string {
 	return this.name
@@ -105,15 +109,15 @@ func (this *Service) Register(i interface{}, prefix ...string) error {
 	}
 }
 
-//func (this *Service) filter(node *Node) bool {
-//	if this.Handler == nil {
-//		return true
-//	}
-//	if h, ok := this.Handler.(filterHandle); ok {
-//		return h.Filter(node)
-//	}
-//	return true
-//}
+func (this *Service) filter(node *Node) bool {
+	if this.Handler == nil {
+		return true
+	}
+	if h, ok := this.Handler.(filterHandle); ok {
+		return h.Filter(node)
+	}
+	return true
+}
 
 func (this *Service) format(serviceName, methodName string, prefix ...string) string {
 	serviceName = this.Formatter(serviceName)
@@ -146,7 +150,7 @@ func (this *Service) RegisterFun(i interface{}, prefix ...string) error {
 		return errors.New("RegisterFun name empty")
 	}
 	node := &Node{name: name, value: v, service: this}
-	if !this.Emit(FilterEventTypeFunc, node) {
+	if !this.filter(node) {
 		return fmt.Errorf("RegisterFun filter return false:%v", name)
 	}
 
@@ -170,7 +174,7 @@ func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 	serviceName := handleType.Elem().Name()
 
 	nb := &Node{name: serviceName, binder: v, service: this}
-	if !this.Emit(FilterEventTypeStruct, nb) {
+	if !this.filter(nb) {
 		logger.Debug("RegisterStruct filter refuse :%v,PkgPath:%v", serviceName, handleType.PkgPath)
 		return nil
 	}
@@ -190,7 +194,7 @@ func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 		name := this.format(serviceName, methodName, prefix...)
 
 		node := &Node{name: name, binder: v, value: method.Func, service: this}
-		if !this.Emit(FilterEventTypeMethod, node) {
+		if !this.filter(node) {
 			continue
 		}
 		this.nodes[name] = node
