@@ -146,9 +146,9 @@ func (this *Service) RegisterFun(i interface{}, prefix ...string) error {
 	}
 
 	name := this.format("", FuncName(v), prefix...)
-	if name == "" {
-		return errors.New("RegisterFun name empty")
-	}
+	//if name == "" {
+	//	return errors.New("RegisterFun name empty")
+	//}
 	node := &Node{name: name, value: v, service: this}
 	if !this.filter(node) {
 		return fmt.Errorf("RegisterFun filter return false:%v", name)

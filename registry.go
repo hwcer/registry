@@ -76,3 +76,14 @@ func (this *Registry) Services() (r []*Service) {
 	}
 	return
 }
+
+// Range 遍历所有节点
+func (this *Registry) Range(f func(service *Service, node *Node) bool) {
+	for _, srv := range this.dict {
+		for _, node := range srv.nodes {
+			if !f(srv, node) {
+				return
+			}
+		}
+	}
+}

@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -31,9 +30,9 @@ func newRouter(name string, arr []string, step int) *Router {
 // 静态路由
 func newStatic(arr []string, handle interface{}) *Router {
 	l := len(arr) - 1
-	node := newRouter(RouteName(arr[l]), arr, l)
-	node.handle = handle
-	return node
+	router := newRouter(RouteName(arr[l]), arr, l)
+	router.handle = handle
+	return router
 }
 
 type Router struct {
@@ -117,9 +116,9 @@ func (this *Router) Match(paths ...string) (nodes []*Router) {
 // Register 注册协议
 func (this *Router) Register(handle interface{}, paths ...string) (err error) {
 	route := Join(paths...)
-	if route == "" {
-		return errors.New("Router.Watch method or route empty")
-	}
+	//if route == "" {
+	//	return errors.New("Router.Watch method or route empty")
+	//}
 	arr := strings.Split(route, "/")
 	//静态路径
 	if !strings.Contains(route, PathMatchParam) && !strings.Contains(route, PathMatchVague) {
@@ -160,7 +159,7 @@ func (this *Router) Params(paths ...string) map[string]string {
 	if m > len(this.route) {
 		m = len(this.route)
 	}
-	for i := 0; i < m; i++ {
+	for i := 2; i < m; i++ {
 		s := this.route[i]
 		if strings.HasPrefix(s, PathMatchParam) {
 			k := strings.TrimPrefix(s, PathMatchParam)
