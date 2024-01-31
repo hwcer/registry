@@ -1,3 +1,2 @@
-github.com/hwcer/logger v0.0.1 h1:2rQr9qodlZwH/XzgSOdVkiysWz1OqShfW9TixEdDIf4=
-github.com/hwcer/logger v0.0.1/go.mod h1:1HLYxx4JJuLw2OfLZqgH2dQ0u3J5IPDMMpnbgA3Xc5E=
-github.com/hwcer/logger v0.0.3/go.mod h1:x6L6wmod8ffnCDjLFHsRHP/4jC7HiKZkYuxZBfA+amg=
+github.com/hwcer/logger v0.0.5 h1:zCXO/CH+uL7EXS1banfRWNpAMZ41Vn1Nbs1TAppUCJU=
+github.com/hwcer/logger v0.0.5/go.mod h1:x6L6wmod8ffnCDjLFHsRHP/4jC7HiKZkYuxZBfA+amg=
