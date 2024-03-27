@@ -3,7 +3,6 @@ package registry
 import (
 	"errors"
 	"fmt"
-	"github.com/hwcer/logger"
 	"path"
 	"reflect"
 	"strings"
@@ -81,7 +80,7 @@ func (this *Service) Merge(s *Service) (err error) {
 		this.Handler = s.Handler
 	}
 	for k, v := range s.nodes {
-		node := &Node{name: v.name, value: v.value, binder: v.binder, service: this}
+		node := &Node{name: v.name, value: v.value, binder: v.binder, Service: this}
 		this.nodes[k] = node
 		if err = this.router.Register(node, node.Route()); err != nil {
 			return
@@ -149,7 +148,7 @@ func (this *Service) RegisterFun(i interface{}, prefix ...string) error {
 	//if name == "" {
 	//	return errors.New("RegisterFun name empty")
 	//}
-	node := &Node{name: name, value: v, service: this}
+	node := &Node{name: name, value: v, Service: this}
 	if !this.filter(node) {
 		return fmt.Errorf("RegisterFun filter return false:%v", name)
 	}
@@ -173,9 +172,9 @@ func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 	handleType := v.Type()
 	serviceName := handleType.Elem().Name()
 
-	nb := &Node{name: serviceName, binder: v, service: this}
+	nb := &Node{name: serviceName, binder: v, Service: this}
 	if !this.filter(nb) {
-		logger.Debug("RegisterStruct filter refuse :%v,PkgPath:%v", serviceName, handleType.PkgPath)
+		fmt.Printf("RegisterStruct filter refuse :%v,PkgPath:%v", serviceName, handleType.PkgPath)
 		return nil
 	}
 
@@ -184,16 +183,16 @@ func (this *Service) RegisterStruct(i interface{}, prefix ...string) error {
 		methodName := method.Name
 		// value must be exported.
 		if method.PkgPath != "" {
-			logger.Debug("Watch value PkgPath Not End,value:%v.%v(),PkgPath:%v", serviceName, methodName, method.PkgPath)
+			fmt.Printf("Watch value PkgPath Not End,value:%v.%v(),PkgPath:%v", serviceName, methodName, method.PkgPath)
 			continue
 		}
 		if !IsExported(methodName) {
-			logger.Debug("Watch value Can't Exported,value:%v.%v()", serviceName, methodName)
+			fmt.Printf("Watch value Can't Exported,value:%v.%v()", serviceName, methodName)
 			continue
 		}
 		name := this.format(serviceName, methodName, prefix...)
 
-		node := &Node{name: name, binder: v, value: method.Func, service: this}
+		node := &Node{name: name, binder: v, value: method.Func, Service: this}
 		if !this.filter(node) {
 			continue
 		}
@@ -212,9 +211,9 @@ func (this *Service) Paths() (r []string) {
 	return
 }
 
-func (this *Service) Range(cb func(*Node) bool) {
+func (this *Service) Range(f func(*Node) bool) {
 	for _, node := range this.nodes {
-		if !cb(node) {
+		if !f(node) {
 			return
 		}
 	}

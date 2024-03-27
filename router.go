@@ -2,6 +2,7 @@ package registry
 
 import (
 	"fmt"
+	"runtime/debug"
 	"strings"
 )
 
@@ -38,8 +39,8 @@ func newStatic(arr []string, handle interface{}) *Router {
 type Router struct {
 	step   int                //层级
 	name   string             // string,:,*,当前层匹配规则
-	child  map[string]*Router //子路径
 	route  []string           //当前路由绝对路径
+	child  map[string]*Router //子路径
 	static map[string]*Router //静态路由,不含糊任何匹配参数
 	handle interface{}        //handle入口
 	//middleware []MiddlewareFunc //中间件
@@ -66,6 +67,10 @@ func (this *Router) Match(paths ...string) (nodes []*Router) {
 	//模糊匹配
 	arr := strings.Split(route, "/")
 	lastPathIndex := len(arr) - 1
+	if lastPathIndex == 0 {
+		fmt.Printf("错误的路由地址:%v\n%v", route, string(debug.Stack()))
+		return
+	}
 
 	var spareNode []*Router
 	var selectNode *Router
