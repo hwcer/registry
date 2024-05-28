@@ -36,7 +36,7 @@ func NewService(name string, router *Router) *Service {
 	if len(r.prefix) > 1 {
 		r.name = r.prefix[1:]
 	}
-	r.Formatter = strings.ToLower
+	//r.Formatter = strings.ToLower
 	return r
 }
 
@@ -45,9 +45,9 @@ type Service struct {
 	prefix string //  /a/b
 	nodes  map[string]*Node
 	//events    map[FilterEventType]func(*Node) bool
-	router    *Router
-	Handler   interface{}         //自定义 Filter等方法
-	Formatter func(string) string //格式化对象和方法名，默认强制小写
+	router  *Router
+	Handler interface{} //自定义 Filter等方法
+	//Formatter func(string) string //格式化对象和方法名，默认强制小写
 }
 
 //func (this *Service) On(t FilterEventType, l func(*Node) bool) {
@@ -119,8 +119,8 @@ func (this *Service) filter(node *Node) bool {
 }
 
 func (this *Service) format(serviceName, methodName string, prefix ...string) string {
-	serviceName = this.Formatter(serviceName)
-	methodName = this.Formatter(methodName)
+	serviceName = Formatter(serviceName)
+	methodName = Formatter(methodName)
 	if len(prefix) == 0 {
 		return Join(serviceName, methodName)
 	}
