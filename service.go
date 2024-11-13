@@ -23,7 +23,7 @@ import (
 //	FilterEventTypeStruct
 //)
 
-type filterHandle interface {
+type Handler interface {
 	Filter(*Node) bool
 }
 
@@ -46,7 +46,7 @@ type Service struct {
 	nodes  map[string]*Node
 	//events    map[FilterEventType]func(*Node) bool
 	router  *Router
-	Handler interface{} //自定义 Filter等方法
+	Handler Handler //自定义 Filter等方法
 	//Formatter func(string) string //格式化对象和方法名，默认强制小写
 }
 
@@ -112,10 +112,7 @@ func (this *Service) filter(node *Node) bool {
 	if this.Handler == nil {
 		return true
 	}
-	if h, ok := this.Handler.(filterHandle); ok {
-		return h.Filter(node)
-	}
-	return true
+	return this.Handler.Filter(node)
 }
 
 func (this *Service) format(serviceName, methodName string, prefix ...string) string {
